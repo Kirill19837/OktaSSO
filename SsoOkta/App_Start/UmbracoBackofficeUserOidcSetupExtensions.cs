@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -36,7 +36,6 @@ namespace SsoOkta.App_Start
 
             var identityOptions = new OpenIdConnectAuthenticationOptions
             {
-                Caption = "Okta Sso",
                 Authority = authority,
                 ClientId = clientId,
                 ClientSecret = clientSecret,
@@ -47,13 +46,14 @@ namespace SsoOkta.App_Start
                 SaveTokens = true,
                 RequireHttpsMetadata = true,
                 SignInAsAuthenticationType =  Constants.Security.BackOfficeExternalAuthenticationType,
-                AuthenticationType = authority
             };
-
             identityOptions.ForUmbracoBackOffice("btn-blue", "fa-sign-in-alt");
+            identityOptions.Caption = "Okta Sso";
+            identityOptions.AuthenticationType = authority;
 
             var autoLinkOptions = new ExternalSignInAutoLinkOptions(true, new[] { "editor" })
             {
+                AllowManualLinking = false,
                 OnAutoLinking = SetRolesAndGroups,
 
                 OnExternalLogin = (identityUser, info) =>

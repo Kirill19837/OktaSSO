@@ -75,6 +75,7 @@ namespace SsoOkta.App_Start
                             var sub = userInfoResponse.Claims.First(x => x.Type == JwtClaimTypes.Subject);
                             var roles = id.FindAll(JwtClaimTypes.Role);
                             var email = userInfoResponse.Claims.First(x => x.Type == JwtClaimTypes.Email);
+                            nid.AddClaim(new Claim(ClaimTypes.GivenName, userInfoResponse.Claims.First(x => x.Type == JwtClaimTypes.GivenName).Value));
                             nid.AddClaim(new Claim(ClaimTypes.Email, email.Value));
                             nid.AddClaims(userInfoResponse.Claims.Where(x => x != email));
                             nid.AddClaim(sub);
