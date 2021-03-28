@@ -169,7 +169,7 @@ namespace SsoOkta.App_Start
             user.ClearGroups();
             foreach (var matchedRole in matchedRoles)
             {
-                user.AddGroup(matchedRole);
+                user.AddGroup(matchedRole );
             }
 
             userService.Save(user);
