@@ -410,10 +410,10 @@ namespace SsoOkta.Controllers
         private string ToAbsoluteUrl(string relativeUrl)
         {
             return relativeUrl;
-            var currentUrl = HttpContext.Request.Url;
-            var url = new UriBuilder(currentUrl.Scheme, currentUrl.Host,currentUrl.Port);
-            url.Path = relativeUrl;
-            return Uri.UnescapeDataString(url.Uri.ToString());
+            //var currentUrl = HttpContext.Request.Url;
+            //var url = new UriBuilder(currentUrl.Scheme, currentUrl.Host,currentUrl.Port);
+            //url.Path = relativeUrl;
+            //return Uri.UnescapeDataString(url.Uri.ToString());
         }
         
         private IAuthenticationManager AuthenticationManager

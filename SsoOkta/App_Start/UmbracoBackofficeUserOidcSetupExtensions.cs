@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+using System;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
@@ -12,9 +9,7 @@ using Microsoft.AspNet.Identity.Owin;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.Owin;
 using Microsoft.Owin.Security;
-using Microsoft.Owin.Security.Notifications;
 using Microsoft.Owin.Security.OpenIdConnect;
-using Newtonsoft.Json;
 using Owin;
 using Umbraco.Core;
 using Umbraco.Core.Composing;
@@ -43,14 +38,16 @@ namespace SsoOkta.App_Start
                 ResponseType = OpenIdConnectResponseType.CodeIdToken,
                 RedirectUri = redirectUri,
                 PostLogoutRedirectUri = OidcConfiguration.Backoffice.PostLogoutUris,
-                Scope = "openid profile email",
+                Scope = "openid profile email groups",
                 SaveTokens = true,
                 RequireHttpsMetadata = true,
-                SignInAsAuthenticationType =  Constants.Security.BackOfficeExternalAuthenticationType,
+                SignInAsAuthenticationType = Constants.Security.BackOfficeExternalAuthenticationType,
                 AuthenticationType = authority
             };
 
             identityOptions.ForUmbracoBackOffice("btn-blue", "fa-sign-in-alt");
+
+            identityOptions.AuthenticationType = authority;
 
             var autoLinkOptions = new ExternalSignInAutoLinkOptions(true, new[] { "editor" })
             {
@@ -67,11 +64,28 @@ namespace SsoOkta.App_Start
                 new BackOfficeExternalLoginProviderOptions()
                 {
                     AutoLinkOptions = autoLinkOptions,
-                    DenyLocalLogin = true
+                    DenyLocalLogin = true,
+                    AutoRedirectLoginToExternalProvider = true
                 });
 
             identityOptions.Notifications = new OpenIdConnectAuthenticationNotifications
             {
+                SecurityTokenValidated = (context) =>
+                {
+                    bool isAdmin = context.AuthenticationTicket.Identity.Claims.Any(x => x.Type == "groups" && x.Value == "Admins");
+                    if (!isAdmin)
+                    {
+                        throw new System.IdentityModel.Tokens.SecurityTokenValidationException();
+                    }
+
+                    return System.Threading.Tasks.Task.FromResult(0);
+                },
+                AuthenticationFailed = (context) =>
+                {
+                    context.OwinContext.Response.Redirect("/unauthorized");
+                    context.HandleResponse();
+                    return System.Threading.Tasks.Task.FromResult(0);
+                },
                 AuthorizationCodeReceived = async n =>
                 {
                     using (var client = new HttpClient())
@@ -97,7 +111,8 @@ namespace SsoOkta.App_Start
                             Address = disco.UserInfoEndpoint,
                             Token = tokenResponse.AccessToken
                         });
-                        
+
+
                         var id = n.AuthenticationTicket.Identity;
                         var nid = new ClaimsIdentity(id.AuthenticationType, ClaimTypes.GivenName, ClaimTypes.Role);
 
@@ -111,7 +126,7 @@ namespace SsoOkta.App_Start
                         nid.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
                         nid.AddClaim(new Claim("expires_at", DateTime.Now.AddSeconds(tokenResponse.ExpiresIn).ToLocalTime().ToString(CultureInfo.InvariantCulture)));
                         nid.AddClaim(new Claim(ClaimTypes.NameIdentifier, sub.Value, "http://www.w3.org/2001/XMLSchema#string", OidcConfiguration.Authority));
-                        
+
                         n.AuthenticationTicket = new AuthenticationTicket(nid, n.AuthenticationTicket.Properties);
 
                         var cookieOptions = new CookieOptions()
