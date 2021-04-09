@@ -5,6 +5,8 @@ namespace SsoOkta.App_Start
     public static class OidcConfiguration
     {
         public static string Authority => ConfigurationManager.AppSettings.Get("oidc:authority");
+        public static string ApiToken => ConfigurationManager.AppSettings.Get("oidc:api:token");
+        
 
         public static class Cms
         {
@@ -12,6 +14,7 @@ namespace SsoOkta.App_Start
             public static string ClientSecret => ConfigurationManager.AppSettings.Get("oidc:front:clientSecret");
             public static string PostLogoutUris => ConfigurationManager.AppSettings.Get("oidc:front:postLogoutUris");
             public static string RedirectUris => ConfigurationManager.AppSettings.Get("oidc:front:redirectUris");
+            public static string MembersGroup => ConfigurationManager.AppSettings.Get("oidc:front:oktaMemberGroupName");
         }
 
         public static class Backoffice

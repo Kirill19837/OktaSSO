@@ -19,6 +19,7 @@ using Umbraco.Core.Cache;
 using Umbraco.Core.Logging;
 using Umbraco.Core.Persistence;
 using Umbraco.Core.Services;
+using SsoOkta.Contracts;
 
 namespace SsoOkta.Controllers 
 {
@@ -27,13 +28,14 @@ namespace SsoOkta.Controllers
     {
         private UmbracoMembersUserManager<UmbracoApplicationMember> _userManager;
         private UmbracoMembersRoleManager<UmbracoApplicationRole> _roleManager;
-
-        public UmbracoIdentityAccountController(
+        private ISsoService _ssoService;
+        public UmbracoIdentityAccountController(ISsoService ssoService,
             UmbracoMembersUserManager<UmbracoApplicationMember> userManager,
             UmbracoMembersRoleManager<UmbracoApplicationRole> roleManager,
             IUmbracoContextAccessor umbracoContextAccessor, IUmbracoDatabaseFactory databaseFactory, ServiceContext services, AppCaches appCaches, ILogger logger, IProfilingLogger profilingLogger, UmbracoHelper umbracoHelper)
             : base(umbracoContextAccessor, databaseFactory, services, appCaches, logger, profilingLogger, umbracoHelper)
         {
+            _ssoService = ssoService;
             _userManager = userManager;
             _roleManager = roleManager;
         }
@@ -370,6 +372,24 @@ namespace SsoOkta.Controllers
                 MemberProperties = model.MemberProperties,
                 MemberTypeAlias = model.MemberTypeAlias
             };
+            bool isUserExists = await _ssoService.MemberExists(model.Email);
+            if (!isUserExists)
+            {
+                var externalResult = await _ssoService.CreateMember(model);
+                if (!externalResult.Succeeded)
+                {
+                    AddModelErrors(externalResult, "registerModel");
+                }
+                else
+                {
+                    await _ssoService.ApplyMember(model.Email);
+                    await _ssoService.ActivateMember(model.Email);
+                }
+            } else
+            {
+                await _ssoService.ApplyMember(model.Email);
+                await _ssoService.ActivateMember(model.Email);
+            }
 
             var result = await _userManager.CreateAsync(user, model.Password);
             if (result.Succeeded)

@@ -57,7 +57,8 @@ namespace SsoOkta.App_Start
                 {
                     SetRolesAndGroups(identityUser, info);
                     return true;
-                }
+                },
+                                
             };
 
             identityOptions.SetBackOfficeExternalLoginProviderOptions(
@@ -70,6 +71,14 @@ namespace SsoOkta.App_Start
 
             identityOptions.Notifications = new OpenIdConnectAuthenticationNotifications
             {
+                RedirectToIdentityProvider = (context) =>
+                {
+                    if (context.ProtocolMessage.RequestType == OpenIdConnectRequestType.Logout)
+                    {
+                        context.ProtocolMessage.IdTokenHint = context.Request.Cookies["access_token"];
+                    }
+                    return System.Threading.Tasks.Task.FromResult(0);
+                },
                 SecurityTokenValidated = (context) =>
                 {
                     bool isAdmin = context.AuthenticationTicket.Identity.Claims.Any(x => x.Type == "groups" && x.Value == "Admins");
